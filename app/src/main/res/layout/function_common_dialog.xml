@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/dp_288"
+        android:background="#ffffff"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tv_flag"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/dp_20"
+            android:layout_marginTop="@dimen/dp_24"
+            android:text="审批意见："
+            android:textColor="#333333"
+            android:textSize="@dimen/sp_12" />
+
+        <EditText
+            android:id="@+id/et_des"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/tv_flag"
+            android:layout_marginLeft="@dimen/dp_20"
+            android:layout_marginTop="@dimen/dp_10"
+            android:layout_marginRight="@dimen/dp_20"
+            android:background="@null"
+            android:hint="请输入审批意见"
+            android:maxLength="140"
+            android:textColor="#333333"
+            android:textColorHint="#999999"
+            android:textSize="@dimen/sp_12" />
+
+        <View
+            android:id="@+id/view_line"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/dp_0_5"
+            android:layout_below="@+id/et_des"
+            android:layout_marginLeft="@dimen/dp_20"
+            android:layout_marginTop="@dimen/dp_5"
+            android:layout_marginRight="@dimen/dp_20"
+            android:background="#e5e5e5" />
+
+        <TextView
+            android:id="@+id/tv_number"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/view_line"
+            android:layout_marginLeft="@dimen/dp_20"
+            android:layout_marginTop="@dimen/dp_2"
+            android:layout_marginRight="@dimen/dp_20"
+            android:gravity="right"
+            android:text="(0/140)"
+            android:textColor="#999999"
+            android:textSize="@dimen/sp_12" />
+
+        <TextView
+            android:id="@+id/tv_commit"
+            android:layout_width="@dimen/dp_90"
+            android:layout_height="@dimen/dp_28"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginRight="@dimen/dp_12"
+            android:layout_marginBottom="@dimen/dp_20"
+            android:gravity="center"
+            android:text="确认"
+            android:textColor="#ffffff"
+            android:textSize="@dimen/sp_12" />
+
+        <TextView
+            android:id="@+id/tv_cancel"
+            android:layout_width="@dimen/dp_90"
+            android:layout_height="@dimen/dp_28"
+            android:layout_alignParentBottom="true"
+            android:layout_marginRight="@dimen/dp_6"
+            android:layout_marginBottom="@dimen/dp_20"
+            android:layout_toLeftOf="@+id/tv_commit"
+            android:gravity="center"
+            android:text="取消"
+            android:textColor="#313223"
+            android:textSize="@dimen/sp_12" />
+    </RelativeLayout>
+</LinearLayout>

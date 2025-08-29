@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <RelativeLayout
+        android:id="@+id/rl_title"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/dp_45"
+        android:background="#ffffff">
+
+        <TextView
+            android:id="@+id/tv_title"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_centerInParent="true"
+            android:gravity="center_vertical"
+            android:textColor="#314457"
+            android:textSize="@dimen/sp_16" />
+
+        <RelativeLayout
+            android:id="@+id/rl_back"
+            android:layout_width="@dimen/dp_40"
+            android:layout_height="match_parent">
+
+            <ImageView
+                android:layout_width="@dimen/dp_24"
+                android:layout_height="@dimen/dp_24"
+                android:layout_centerInParent="true"
+                android:src="@mipmap/icon_go_back" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:visibility="gone"
+            android:layout_toRightOf="@+id/rl_back"
+            android:id="@+id/rl_close"
+            android:layout_width="@dimen/dp_40"
+            android:layout_height="match_parent">
+
+            <ImageView
+                android:layout_width="@dimen/dp_20"
+                android:layout_height="@dimen/dp_20"
+                android:layout_centerInParent="true"
+                android:src="@mipmap/icon_close" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:layout_alignParentRight="true"
+            android:id="@+id/rl_home"
+            android:layout_width="@dimen/dp_40"
+            android:layout_height="match_parent">
+
+            <ImageView
+                android:layout_width="@dimen/dp_24"
+                android:layout_height="@dimen/dp_24"
+                android:layout_centerInParent="true"
+                android:src="@mipmap/icon_go_home" />
+        </RelativeLayout>
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <com.cars.material.custom.ProgressWebView
+            android:id="@+id/web_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fadeScrollbars="true"
+            android:scrollbarStyle="insideOverlay" />
+        <View
+            android:id="@+id/watermark"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+
+    </RelativeLayout>
+</LinearLayout>
