@@ -1,6 +1,14 @@
 apply plugin: 'com.android.application'
 
 android {
+    signingConfigs {
+        debug {
+            storeFile file('../debug.keystore')
+            storePassword '123456'
+            keyAlias 'key'
+            keyPassword '123456'
+        }
+    }
     compileSdkVersion 28
     defaultConfig {
         applicationId "com.cars.material"
@@ -15,10 +23,55 @@ android {
             targetCompatibility JavaVersion.VERSION_1_8
         }
     }
+
+    flavorDimensions "environment"
+
+    // 设置默认的构建变体
+    defaultConfig {
+        // 这里的配置会被productFlavors覆盖
+    }
+
+    productFlavors {
+        // 正式版 - 建设物资
+        production {
+            applicationId "com.cars.material"
+            dimension "environment"
+
+            // 正式环境配置
+            buildConfigField "String", "SERVER_URL", "\"http://183.56.240.244:8081/\""
+            buildConfigField "String", "API_URL", "\"http://183.56.240.244:8081/api\""
+            buildConfigField "String", "HOST_NAME", "\"183.56.240.244\""
+
+            manifestPlaceholders = [
+                    appName: "建设物资"
+            ]
+        }
+
+        // 测试版 - 建设物资-测试
+        staging {
+            applicationId "com.cars.material.test"
+            dimension "environment"
+
+            // 测试环境配置
+            buildConfigField "String", "SERVER_URL", "\"http://39.107.57.20:38222/\""
+            buildConfigField "String", "API_URL", "\"http://39.107.57.20:38222/api\""
+            buildConfigField "String", "HOST_NAME", "\"39.107.57.20\""
+
+            manifestPlaceholders = [
+                    appName: "建设物资-测试"
+            ]
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.debug
         }
     }
 
