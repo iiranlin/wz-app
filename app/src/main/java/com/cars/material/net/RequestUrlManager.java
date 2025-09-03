@@ -20,4 +20,6 @@ public class RequestUrlManager {
     public static final String GET_SMS_LOGIN_INFO = "/blcd-base/auth/loginByPhone";
     //获取手机验证码
     public static final String GET_SMS_VERIFICATION_CODE = "/prodmgr-inv/auth/sendCaptcha";
+    //获取授权详情
+    public static final String GET_AUTHORIZATION_DETAIL = "/prodmgr-inv/invAuthorizedDevices/getAuthorizationDetail";
 }

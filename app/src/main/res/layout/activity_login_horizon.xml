@@ -345,18 +345,90 @@
             android:textColor="#ffffff"
             android:textSize="@dimen/sp_8" />
 
+        <!-- 申请授权按钮 -->
         <TextView
-            android:id="@+id/tv_register"
+            android:id="@+id/tv_register_apply"
             android:layout_width="match_parent"
             android:layout_height="@dimen/dp_24"
             android:layout_marginLeft="@dimen/dp_10"
             android:layout_marginTop="@dimen/dp_8"
             android:layout_marginRight="@dimen/dp_10"
-            android:background="@drawable/corner_4dp_ffffff_solied_dcdfe6"
+            android:background="@drawable/corner_4dp_fff4d5"
             android:gravity="center"
-            android:text="查看授权码"
-            android:textColor="#1b1f26"
-            android:textSize="@dimen/sp_8" />
+            android:text="申请授权123"
+            android:textColor="#333333"
+            android:textSize="@dimen/sp_8"
+            android:drawableLeft="@mipmap/sqm_sqsq"
+            android:drawablePadding="@dimen/dp_3"
+            android:visibility="visible" />
+
+        <!-- 已通过授权按钮 -->
+        <TextView
+            android:id="@+id/tv_register_approved"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/dp_24"
+            android:layout_marginLeft="@dimen/dp_10"
+            android:layout_marginTop="@dimen/dp_8"
+            android:layout_marginRight="@dimen/dp_10"
+            android:background="@drawable/corner_4dp_0daa01"
+            android:gravity="center"
+            android:text="已通过授权"
+            android:textColor="#ffffff"
+            android:textSize="@dimen/sp_8"
+            android:drawableLeft="@mipmap/sqm_ytgsq"
+            android:drawablePadding="@dimen/dp_3"
+            android:visibility="gone" />
+
+        <!-- 正在授权中按钮 -->
+        <TextView
+            android:id="@+id/tv_register_pending"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/dp_24"
+            android:layout_marginLeft="@dimen/dp_10"
+            android:layout_marginTop="@dimen/dp_8"
+            android:layout_marginRight="@dimen/dp_10"
+            android:background="@drawable/corner_4dp_0d0401"
+            android:gravity="center"
+            android:text="正在授权中"
+            android:textColor="#ffffff"
+            android:textSize="@dimen/sp_8"
+            android:drawableLeft="@mipmap/sqm_sqshz"
+            android:drawablePadding="@dimen/dp_3"
+            android:visibility="gone" />
+
+        <!-- 已驳回授权按钮 -->
+        <TextView
+            android:id="@+id/tv_register_rejected"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/dp_24"
+            android:layout_marginLeft="@dimen/dp_10"
+            android:layout_marginTop="@dimen/dp_8"
+            android:layout_marginRight="@dimen/dp_10"
+            android:background="@drawable/corner_4dp_020401"
+            android:gravity="center"
+            android:text="已驳回授权"
+            android:textColor="#333333"
+            android:textSize="@dimen/sp_8"
+            android:drawableLeft="@mipmap/sqm_ybhsq"
+            android:drawablePadding="@dimen/dp_3"
+            android:visibility="gone" />
+
+        <!-- 已关闭授权按钮 -->
+        <TextView
+            android:id="@+id/tv_register_closed"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/dp_24"
+            android:layout_marginLeft="@dimen/dp_10"
+            android:layout_marginTop="@dimen/dp_8"
+            android:layout_marginRight="@dimen/dp_10"
+            android:background="@drawable/corner_4dp_0d0401"
+            android:gravity="center"
+            android:text="已关闭授权"
+            android:textColor="#ffffff"
+            android:textSize="@dimen/sp_8"
+            android:drawableLeft="@mipmap/sqm_ygbsq"
+            android:drawablePadding="@dimen/dp_3"
+            android:visibility="gone" />
 
         <RelativeLayout
             android:id="@+id/rl_user_bottom"

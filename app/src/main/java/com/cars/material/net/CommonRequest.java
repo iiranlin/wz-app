@@ -46,6 +46,31 @@ public class CommonRequest {
     }
 
     /**
+     * 创建带请求头的Get请求的Request
+     */
+    public static Request createGetRequestWithHeaders(String url, RequestParams params) {
+        String urlPath = RequestUrlManager.HOST + url;
+        StringBuilder urlBuilder = new StringBuilder(urlPath);
+        if (params != null) {
+            urlBuilder.append("?");
+            for (Map.Entry<String, String> entry : params.urlParams.entrySet()) {
+                urlBuilder
+                        .append(entry.getKey())
+                        .append("=")
+                        .append(entry.getValue())
+                        .append("&");
+            }
+        }
+        String urlStr = urlBuilder.toString();
+        return new Request.Builder()
+                .url(urlStr.substring(0, urlStr.length() - 1))
+                .get()
+                .tag(url)
+                .header("client-type", "PC")
+                .build();
+    }
+
+    /**
      * 创建Post请求的Request
      */
     public static Request createPostRequest(String url, RequestParams params) {

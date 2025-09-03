@@ -92,10 +92,18 @@ public class MainActivity extends BaseActivity {
         settings.setDisplayZoomControls(false);
         settings.setDomStorageEnabled(true);
 
-        mWebView.loadUrl(RequestUrlManager.MOBILE_HOST
-                + "?TokenKey=" + SpUtils.getString(this, SpUtils.TOKEN, ""));
-//        mWebView.loadUrl("http://10.59.248.155:9527/"
-//                + "?TokenKey=" + SpUtils.getString(this, SpUtils.TOKEN, ""));
+        // 检查是否有传递的H5 URL
+        String h5Url = getIntent().getStringExtra("h5_url");
+        if (h5Url != null && !h5Url.isEmpty()) {
+            // 加载指定的H5页面
+            mWebView.loadUrl(h5Url);
+        } else {
+            // 加载默认首页
+            mWebView.loadUrl(RequestUrlManager.MOBILE_HOST
+                    + "?TokenKey=" + SpUtils.getString(this, SpUtils.TOKEN, ""));
+//            mWebView.loadUrl("http://10.59.248.155:9527/"
+//                    + "?TokenKey=" + SpUtils.getString(this, SpUtils.TOKEN, ""));
+        }
         mWebView.setWebViewClient(new WebViewClient());
 
         mWebView.setWebChromeClient(new WebChromeClient() {
@@ -227,6 +235,18 @@ public class MainActivity extends BaseActivity {
                     Manifest.permission.ACCESS_COARSE_LOCATION,};
             mPermissionType = "location";
             initPermission(permissions);
+        }
+
+        @JavascriptInterface
+        public void backToAndroidHome() {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    // 加载默认首页
+                    mWebView.loadUrl(RequestUrlManager.MOBILE_HOST
+                            + "?TokenKey=" + SpUtils.getString(MainActivity.this, SpUtils.TOKEN, ""));
+                }
+            });
         }
     }
 

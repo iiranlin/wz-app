@@ -61,6 +61,15 @@ public class CommonOkHttpClient {
     }
 
     /**
+     * GET请求（不使用SM4解密）
+     */
+    public static Call getPlain(int requestId, Request request, ResponseHandler handler, boolean isList) {
+        Call call = mOkHttpClient.newCall(request);
+        call.enqueue(new PlainJsonCallback(handler, requestId, isList));
+        return call;
+    }
+
+    /**
      * POST请求
      */
     public static Call post(int requestId, Request request, ResponseHandler handler, boolean isList) {
