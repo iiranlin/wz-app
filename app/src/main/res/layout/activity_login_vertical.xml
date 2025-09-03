@@ -346,7 +346,7 @@
             android:textSize="@dimen/sp_10" />
 
         <!-- 申请授权按钮 -->
-        <TextView
+        <FrameLayout
             android:id="@+id/tv_register_apply"
             android:layout_width="match_parent"
             android:layout_height="@dimen/dp_30"
@@ -354,16 +354,33 @@
             android:layout_marginTop="@dimen/dp_8"
             android:layout_marginRight="@dimen/dp_10"
             android:background="@drawable/corner_4dp_fff4d5"
-            android:gravity="center"
-            android:text="申请授权"
-            android:textColor="#333333"
-            android:textSize="@dimen/sp_10"
-            android:drawableLeft="@mipmap/sqm_sqsq"
-            android:drawablePadding="@dimen/dp_5"
-            android:visibility="visible" />
+            android:visibility="visible">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <TextView
+                    android:id="@+id/tv_register_apply_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"
+                    android:text="申请授权"
+                    android:textColor="#333333"
+                    android:textSize="@dimen/sp_10" />
+
+                <ImageView
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_centerVertical="true"
+                    android:layout_marginEnd="@dimen/dp_5"
+                    android:layout_toStartOf="@id/tv_register_apply_text"
+                    android:src="@mipmap/sqm_sqsq" />
+            </RelativeLayout>
+        </FrameLayout>
 
         <!-- 已通过授权按钮 -->
-        <TextView
+        <FrameLayout
             android:id="@+id/tv_register_approved"
             android:layout_width="match_parent"
             android:layout_height="@dimen/dp_30"
@@ -371,16 +388,33 @@
             android:layout_marginTop="@dimen/dp_8"
             android:layout_marginRight="@dimen/dp_10"
             android:background="@drawable/corner_4dp_0daa01"
-            android:gravity="center"
-            android:text="已通过授权"
-            android:textColor="#ffffff"
-            android:textSize="@dimen/sp_10"
-            android:drawableLeft="@mipmap/sqm_ytgsq"
-            android:drawablePadding="@dimen/dp_5"
-            android:visibility="gone" />
+            android:visibility="gone">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <TextView
+                    android:id="@+id/tv_register_approved_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"
+                    android:text="已通过授权"
+                    android:textColor="#ffffff"
+                    android:textSize="@dimen/sp_10" />
+
+                <ImageView
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_centerVertical="true"
+                    android:layout_marginEnd="@dimen/dp_5"
+                    android:layout_toStartOf="@id/tv_register_approved_text"
+                    android:src="@mipmap/sqm_ytgsq" />
+            </RelativeLayout>
+        </FrameLayout>
 
         <!-- 正在授权中按钮 -->
-        <TextView
+        <FrameLayout
             android:id="@+id/tv_register_pending"
             android:layout_width="match_parent"
             android:layout_height="@dimen/dp_30"
@@ -388,16 +422,33 @@
             android:layout_marginTop="@dimen/dp_8"
             android:layout_marginRight="@dimen/dp_10"
             android:background="@drawable/corner_4dp_020401"
-            android:gravity="center"
-            android:text="正在授权中"
-            android:textColor="#ffffff"
-            android:textSize="@dimen/sp_10"
-            android:drawableLeft="@mipmap/sqm_sqshz"
-            android:drawablePadding="@dimen/dp_5"
-            android:visibility="gone" />
+            android:visibility="gone">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <TextView
+                    android:id="@+id/tv_register_pending_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"
+                    android:text="正在授权中"
+                    android:textColor="#ffffff"
+                    android:textSize="@dimen/sp_10" />
+
+                <ImageView
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_centerVertical="true"
+                    android:layout_marginEnd="@dimen/dp_5"
+                    android:layout_toStartOf="@id/tv_register_pending_text"
+                    android:src="@mipmap/sqm_sqshz" />
+            </RelativeLayout>
+        </FrameLayout>
 
         <!-- 已驳回授权按钮 -->
-        <TextView
+        <FrameLayout
             android:id="@+id/tv_register_rejected"
             android:layout_width="match_parent"
             android:layout_height="@dimen/dp_30"
@@ -405,16 +456,33 @@
             android:layout_marginTop="@dimen/dp_8"
             android:layout_marginRight="@dimen/dp_10"
             android:background="@drawable/corner_4dp_0d0a01"
-            android:gravity="center"
-            android:text="已驳回授权"
-            android:textColor="#ffffff"
-            android:textSize="@dimen/sp_10"
-            android:drawableLeft="@mipmap/sqm_ybhsq"
-            android:drawablePadding="@dimen/dp_5"
-            android:visibility="gone" />
+            android:visibility="gone">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <TextView
+                    android:id="@+id/tv_register_rejected_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"
+                    android:text="已驳回授权"
+                    android:textColor="#ffffff"
+                    android:textSize="@dimen/sp_10" />
+
+                <ImageView
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_centerVertical="true"
+                    android:layout_marginEnd="@dimen/dp_5"
+                    android:layout_toStartOf="@id/tv_register_rejected_text"
+                    android:src="@mipmap/sqm_ybhsq" />
+            </RelativeLayout>
+        </FrameLayout>
 
               <!-- 已关闭授权按钮 -->
-        <TextView
+        <FrameLayout
             android:id="@+id/tv_register_closed"
             android:layout_width="match_parent"
             android:layout_height="@dimen/dp_30"
@@ -422,13 +490,30 @@
             android:layout_marginTop="@dimen/dp_8"
             android:layout_marginRight="@dimen/dp_10"
             android:background="@drawable/corner_4dp_0d0401"
-            android:gravity="center"
-            android:text="已关闭授权"
-            android:textColor="#ffffff"
-            android:textSize="@dimen/sp_10"
-            android:drawableLeft="@mipmap/sqm_ybhsq"
-            android:drawablePadding="@dimen/dp_5"
-            android:visibility="gone" />
+            android:visibility="gone">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <TextView
+                    android:id="@+id/tv_register_closed_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"
+                    android:text="已关闭授权"
+                    android:textColor="#ffffff"
+                    android:textSize="@dimen/sp_10" />
+
+                <ImageView
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_centerVertical="true"
+                    android:layout_marginEnd="@dimen/dp_5"
+                    android:layout_toStartOf="@id/tv_register_closed_text"
+                    android:src="@mipmap/sqm_ybhsq" />
+            </RelativeLayout>
+        </FrameLayout>
 
         
 

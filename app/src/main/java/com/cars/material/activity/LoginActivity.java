@@ -86,10 +86,11 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener,
     private TextView mTvSmsVerification;
 
     private TextView mTvLogin;
-    private TextView mTvRegisterApply;
-    private TextView mTvRegisterApproved;
-    private TextView mTvRegisterPending;
-    private TextView mTvRegisterRejected;
+    private View mTvRegisterApply;
+    private View mTvRegisterApproved;
+    private View mTvRegisterPending;
+    private View mTvRegisterRejected;
+    private View mTvRegisterClosed;
 
     private String mImageBase;
     private String mRandomKey;
@@ -202,6 +203,7 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener,
         mTvRegisterApproved = findViewById(R.id.tv_register_approved);
         mTvRegisterPending = findViewById(R.id.tv_register_pending);
         mTvRegisterRejected = findViewById(R.id.tv_register_rejected);
+        mTvRegisterClosed = findViewById(R.id.tv_register_closed);
 
         mRlUserBottom = findViewById(R.id.rl_user_bottom);
         mRlSmsBottom = findViewById(R.id.rl_sms_bottom);
@@ -220,6 +222,7 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener,
         mTvRegisterApproved.setOnClickListener(this);
         mTvRegisterPending.setOnClickListener(this);
         mTvRegisterRejected.setOnClickListener(this);
+        mTvRegisterClosed.setOnClickListener(this);
         mTvSmsChange.setOnClickListener(this);
         mIvSee.setOnClickListener(this);
         mLlCheckBox.setOnClickListener(this);
@@ -336,6 +339,7 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener,
         mTvRegisterApproved.setVisibility(View.GONE);
         mTvRegisterPending.setVisibility(View.GONE);
         mTvRegisterRejected.setVisibility(View.GONE);
+        mTvRegisterClosed.setVisibility(View.GONE);
 
         // 根据授权状态显示对应按钮
         if (mAuthorizationInfo.needApply()) {
@@ -360,6 +364,10 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener,
                     android.util.Log.d("LoginActivity", "显示已驳回授权按钮");
                     mTvRegisterRejected.setVisibility(View.VISIBLE);
                     break;
+                case "0": // 已关闭授权
+                    android.util.Log.d("LoginActivity", "显示已关闭授权按钮");
+                    mTvRegisterClosed.setVisibility(View.VISIBLE);
+                    break;
                 default:
                     // 默认申请状态
                     android.util.Log.d("LoginActivity", "默认显示申请授权按钮");
@@ -376,7 +384,7 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener,
         Intent intent = new Intent(LoginActivity.this, MainActivity.class);
 
         // 构建H5页面URL
-        String baseUrl = "http://192.168.110.119:9527/deviceDetail";
+        String baseUrl = RequestUrlManager.MOBILE_HOST + "deviceDetail";
         String url = baseUrl;
 
         // 确保设备号不为空
