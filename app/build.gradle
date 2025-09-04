@@ -53,6 +53,10 @@ android {
             dimension "environment"
 
             // 测试环境配置
+            // buildConfigField "String", "SERVER_URL", "\"http://192.168.110.119:9527/\""
+            // buildConfigField "String", "API_URL", "\"http://192.168.110.119:9527/api\""
+            // buildConfigField "String", "HOST_NAME", "\"192.168.110.119:9527\""
+
             buildConfigField "String", "SERVER_URL", "\"http://39.107.57.20:38222/\""
             buildConfigField "String", "API_URL", "\"http://39.107.57.20:38222/api\""
             buildConfigField "String", "HOST_NAME", "\"39.107.57.20\""
