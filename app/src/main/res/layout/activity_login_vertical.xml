@@ -433,7 +433,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_centerInParent="true"
-                    android:text="正在授权中"
+                    android:text="授权审核中"
                     android:textColor="#ffffff"
                     android:textSize="@dimen/sp_10" />
 

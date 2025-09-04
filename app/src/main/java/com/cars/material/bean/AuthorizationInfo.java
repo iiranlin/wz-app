@@ -19,7 +19,7 @@ public class AuthorizationInfo {
          * 授权状态：
          * "1" - 已通过授权
          * "0" - 已关闭授权
-         * "2" - 正在授权中
+         * "2" - 授权审核中
          * "3" - 已驳回授权
          */
         private String status;
@@ -55,7 +55,7 @@ public class AuthorizationInfo {
                 case "0":
                     return "已关闭授权";
                 case "2":
-                    return "正在授权中";
+                    return "授权审核中";
                 case "3":
                     return "已驳回授权";
                 default:

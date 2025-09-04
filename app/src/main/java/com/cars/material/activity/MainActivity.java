@@ -57,7 +57,7 @@ public class MainActivity extends BaseActivity {
     private RelativeLayout mRlHome;
     private TextView mTvTitle;
     private boolean isExit = false;
-    private String[] mFilterMenu = {"供应商首页", "施工单位首页", "监理首页"};
+    private String[] mFilterMenu = {"供应商首页", "施工单位首页", "监理首页","设备使用授权"};
     private View mWatermarkView;
     private String mFileName;
     private String mFilePath;

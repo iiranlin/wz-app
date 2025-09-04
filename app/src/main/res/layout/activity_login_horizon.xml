@@ -379,7 +379,7 @@
             android:drawablePadding="@dimen/dp_3"
             android:visibility="gone" />
 
-        <!-- 正在授权中按钮 -->
+        <!-- 授权审核中按钮 -->
         <TextView
             android:id="@+id/tv_register_pending"
             android:layout_width="match_parent"
@@ -389,7 +389,7 @@
             android:layout_marginRight="@dimen/dp_10"
             android:background="@drawable/corner_4dp_0d0401"
             android:gravity="center"
-            android:text="正在授权中"
+            android:text="授权审核中"
             android:textColor="#ffffff"
             android:textSize="@dimen/sp_8"
             android:drawableLeft="@mipmap/sqm_sqshz"

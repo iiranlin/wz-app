@@ -356,7 +356,7 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener,
                     android.util.Log.d("LoginActivity", "显示已通过授权按钮");
                     mTvRegisterApproved.setVisibility(View.VISIBLE);
                     break;
-                case "2": // 正在授权中
+                case "2": // 授权审核中
                     android.util.Log.d("LoginActivity", "显示正在授权中按钮");
                     mTvRegisterPending.setVisibility(View.VISIBLE);
                     break;
