@@ -73,15 +73,36 @@ public class MainActivity extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        setContentView(R.layout.activity_main);
+        boolean useFullScreen = getIntent().getBooleanExtra("use_full_screen_layout", false);
 
-        mWebView = findViewById(R.id.web_view);
-        mRlBack = findViewById(R.id.rl_back);
-        mRlHome = findViewById(R.id.rl_home);
-        mRlClose = findViewById(R.id.rl_close);
-        mTvTitle = findViewById(R.id.tv_title);
+        if (useFullScreen) {
+            setContentView(R.layout.full_activity_main);
+            mWebView = findViewById(R.id.web_view);
+            mWatermarkView = findViewById(R.id.watermark);
+        } else {
+            setContentView(R.layout.activity_main);
+            mWebView = findViewById(R.id.web_view);
+            mRlBack = findViewById(R.id.rl_back);
+            mRlHome = findViewById(R.id.rl_home);
+            mRlClose = findViewById(R.id.rl_close);
+            mTvTitle = findViewById(R.id.tv_title);
+            mWatermarkView = findViewById(R.id.watermark);
 
-        mWatermarkView = findViewById(R.id.watermark);
+            mRlBack.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (mWebView.canGoBack()) {
+                        mWebView.goBack();
+                    }
+                }
+            });
+            mRlHome.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    mWebView.evaluateJavascript("window.backToHomeClick();", null);
+                }
+            });
+        }
 
         WebSettings settings = mWebView.getSettings();
         settings.setSupportZoom(true);
@@ -132,21 +153,6 @@ public class MainActivity extends BaseActivity {
 
         });
         mWebView.addJavascriptInterface(new WebAppInterface(this), "Android");
-
-        mRlBack.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (mWebView.canGoBack()) {
-                    mWebView.goBack();
-                }
-            }
-        });
-        mRlHome.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mWebView.evaluateJavascript("window.backToHomeClick();", null);
-            }
-        });
     }
 
     @Override

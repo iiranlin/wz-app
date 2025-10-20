@@ -615,8 +615,14 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener,
                 break;
             case GET_AUTHORIZATION_DETAIL:
                 android.util.Log.e("LoginActivity", "授权详情接口调用失败: " + failuer.getEmsg());
-                ToastUtils.showToast(this, "获取授权详情失败：" + failuer.getEmsg());
-                // 接口失败时，保持默认的申请授权状态
+
+                // 接口失败时，跳转到全屏H5页面
+                Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                String url = RequestUrlManager.MOBILE_HOST + "deviceDetail" + "/?deviceNum=" + mAndroidId;
+                intent.putExtra("h5_url", url);
+                intent.putExtra("use_full_screen_layout", true);
+                startActivity(intent);
+                finish();
                 break;
         }
     }
