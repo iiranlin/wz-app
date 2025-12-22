@@ -16,6 +16,7 @@ android {
         targetSdkVersion 28
         versionCode 1
         versionName "1.0"
+        multiDexEnabled true
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 
         compileOptions {
@@ -53,13 +54,13 @@ android {
             dimension "environment"
 
             // 测试环境配置
-            // buildConfigField "String", "SERVER_URL", "\"http://192.168.110.119:9527/\""
-            // buildConfigField "String", "API_URL", "\"http://192.168.110.119:9527/api\""
-            // buildConfigField "String", "HOST_NAME", "\"192.168.110.119:9527\""
+            buildConfigField "String", "SERVER_URL", "\"http://192.168.110.119:9527/\""
+            buildConfigField "String", "API_URL", "\"http://192.168.110.119:9527/api\""
+            buildConfigField "String", "HOST_NAME", "\"192.168.110.119:9527\""
 
-            buildConfigField "String", "SERVER_URL", "\"http://39.107.57.20:38222/\""
-            buildConfigField "String", "API_URL", "\"http://39.107.57.20:38222/api\""
-            buildConfigField "String", "HOST_NAME", "\"39.107.57.20\""
+            // buildConfigField "String", "SERVER_URL", "\"http://120.46.222.240:18005/\""
+            // buildConfigField "String", "API_URL", "\"http://120.46.222.240:18005/api\""
+            // buildConfigField "String", "HOST_NAME", "\"120.46.222.240\""
 
             manifestPlaceholders = [
                     appName: "建设物资-测试"
@@ -83,6 +84,8 @@ android {
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation 'com.android.support:support-v4:28.0.0'
+    implementation 'com.android.support:multidex:1.0.3'
     implementation 'com.android.support:appcompat-v7:28.0.0'
     //65535
     implementation 'com.android.support:multidex:1.0.2'

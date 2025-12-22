@@ -11,3 +11,15 @@
 .externalNativeBuild
 .idea
 
+
+# APK构建产物
+*.apk
+*.aab
+/app/release/
+/app/debug/
+/app/production/
+/app/staging/
+# IDE配置
+.idea/misc.xml
+# 构建输出
+output.json

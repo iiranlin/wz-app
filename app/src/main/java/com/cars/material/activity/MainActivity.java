@@ -1,9 +1,15 @@
+
 package com.cars.material.activity;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.DownloadManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.Uri;
@@ -12,7 +18,10 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.PersistableBundle;
+import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
+import android.support.annotation.NonNull;
+import android.support.v4.content.FileProvider;
 import android.util.Base64;
 import android.view.KeyEvent;
 import android.view.View;
@@ -44,12 +53,12 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
-import cn.hutool.json.JSON;
-
 public class MainActivity extends BaseActivity {
 
     private static final int REQUEST_PERMISSIONS = 0;          //获取权限
     private static final int SELECT_FILE_REQUEST_CODE = 1;          //选择文件
+    // 跳转到“安装未知应用”设置页面的请求码
+    private static final int INSTALL_PERMISSION_REQUEST_CODE = 1002;
 
     private ProgressWebView mWebView;
     private RelativeLayout mRlBack;
@@ -68,6 +77,11 @@ public class MainActivity extends BaseActivity {
 
     private LocationManager locationManager;// 位置管理类
     private String provider;// 位置提供器
+
+    // --- App更新相关变量 ---
+    private DownloadManager mDownloadManager;
+    private long mDownloadId; // 下载任务的唯一ID
+    private String mPendingDownloadUrl; // 用于保存请求权限前待下载的URL
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -113,22 +127,16 @@ public class MainActivity extends BaseActivity {
         settings.setDisplayZoomControls(false);
         settings.setDomStorageEnabled(true);
 
-        // 检查是否有传递的H5 URL
         String h5Url = getIntent().getStringExtra("h5_url");
         if (h5Url != null && !h5Url.isEmpty()) {
-            // 加载指定的H5页面
             mWebView.loadUrl(h5Url);
         } else {
-            // 加载默认首页
             mWebView.loadUrl(RequestUrlManager.MOBILE_HOST
                     + "?TokenKey=" + SpUtils.getString(this, SpUtils.TOKEN, ""));
-//            mWebView.loadUrl("http://10.59.248.155:9527/"
-//                    + "?TokenKey=" + SpUtils.getString(this, SpUtils.TOKEN, ""));
         }
         mWebView.setWebViewClient(new WebViewClient());
 
         mWebView.setWebChromeClient(new WebChromeClient() {
-
             @Override
             public void onProgressChanged(WebView view, int newProgress) {
                 if (newProgress == 100) {
@@ -142,230 +150,138 @@ public class MainActivity extends BaseActivity {
             @Override
             public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
                 mFilePathCallback = filePathCallback;
-
-                String[] permissions = new String[]{
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                        Manifest.permission.READ_EXTERNAL_STORAGE,};
+                String[] permissions = {Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE};
                 mPermissionType = "upload";
                 initPermission(permissions);
                 return true;
             }
-
         });
+
+        // 你原有的JSBridge
         mWebView.addJavascriptInterface(new WebAppInterface(this), "Android");
+        // 用于App更新的新的JSBridge
+        mWebView.addJavascriptInterface(new UpdateWebAppInterface(this), "UpdateAndroidBridge");
+
+        // 注册广播，监听下载完成事件
+        registerReceiver(downloadCompleteReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
     }
 
-    @Override
-    public void onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState) {
-        super.onSaveInstanceState(outState, outPersistentState);
-    }
-
+    // 你原有的WebAppInterface，保持不变
     public class WebAppInterface {
         Context mContext;
-
         WebAppInterface(Context context) {
             mContext = context;
         }
 
         @JavascriptInterface
-        public void sendMenuTitle(final String title) {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    mTvTitle.setText(title);
+        public int getVersionCode() {
+            try {
+                return mContext.getPackageManager().getPackageInfo(mContext.getPackageName(), 0).versionCode;
+            } catch (Exception e) {
+                e.printStackTrace();
+                return 0;
+            }
+        }
 
-                    if (checkMenu(title)) {
-                        mRlBack.setVisibility(View.GONE);
-                        mRlHome.setVisibility(View.GONE);
-                    } else {
-                        mRlBack.setVisibility(View.VISIBLE);
-                        mRlHome.setVisibility(View.VISIBLE);
-                    }
+        @JavascriptInterface
+        public void sendMenuTitle(final String title) {
+            runOnUiThread(() -> {
+                mTvTitle.setText(title);
+                if (checkMenu(title)) {
+                    mRlBack.setVisibility(View.GONE);
+                    mRlHome.setVisibility(View.GONE);
+                } else {
+                    mRlBack.setVisibility(View.VISIBLE);
+                    mRlHome.setVisibility(View.VISIBLE);
                 }
             });
         }
-
         @JavascriptInterface
         public void startToLogin() {
             Intent intent = new Intent(MainActivity.this, LoginActivity.class);
             startActivity(intent);
             finish();
         }
-
         @JavascriptInterface
         public void setWaterMark(String nickName) {
             SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             Date date = new Date();
             String formattedDate = formatter.format(date);
             String waterMark = nickName + " " + formattedDate;
-
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    mWatermarkView.setBackground(new WaterMarBg(waterMark));
-                }
-            });
+            runOnUiThread(() -> mWatermarkView.setBackground(new WaterMarBg(waterMark)));
         }
-
         @JavascriptInterface
         public void fileDownLoad(String fileName, String filePath) {
             mFileName = fileName;
-            mFilePath = RequestUrlManager.HOST + "/blcd-base/minio/download?filePath="
-                    + filePath
-                    + "&fileName="
-                    + fileName;
-
-            String[] permissions = new String[]{
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                    Manifest.permission.READ_EXTERNAL_STORAGE,};
+            mFilePath = RequestUrlManager.HOST + "/blcd-base/minio/download?filePath=" + filePath + "&fileName=" + fileName;
+            String[] permissions = {Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE};
             mPermissionType = "download";
             initPermission(permissions);
         }
-
         @JavascriptInterface
         public void getBase64FromBlobData(String base64Data, String fileName) {
             mFileName = fileName;
             mBase64Data = base64Data;
-
-            String[] permissions = new String[]{
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                    Manifest.permission.READ_EXTERNAL_STORAGE,};
+            String[] permissions = {Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE};
             mPermissionType = "downloadBlob";
             initPermission(permissions);
         }
-
         @JavascriptInterface
         public void initLocationPermission() {
-            String[] permissions = new String[]{
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION,};
+            String[] permissions = {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION};
             mPermissionType = "location";
             initPermission(permissions);
         }
-
         @JavascriptInterface
         public void backToAndroidHome() {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    // 加载默认首页
-                    mWebView.loadUrl(RequestUrlManager.MOBILE_HOST
-                            + "?TokenKey=" + SpUtils.getString(MainActivity.this, SpUtils.TOKEN, ""));
-                }
-            });
+            runOnUiThread(() -> mWebView.loadUrl(RequestUrlManager.MOBILE_HOST + "?TokenKey=" + SpUtils.getString(MainActivity.this, SpUtils.TOKEN, "")));
         }
     }
 
-    /**
-     * 转换成file
-     */
+    // --- 以下是你项目中已有的方法，保持不变 ---
+
     private void convertToGifAndProcess() {
-        File gifFile = new File(Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_DOWNLOADS) + "/" + mFileName);
+        File gifFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + "/" + mFileName);
         saveFileToPath(mBase64Data, gifFile);
     }
 
-    /**
-     * 保存文件
-     *
-     * @param base64
-     * @param gifFilePath
-     */
     private void saveFileToPath(String base64, File gifFilePath) {
         try {
-            byte[] fileBytes = Base64.decode(base64.replaceFirst(
-                    "data:application/octet-stream;base64,", ""), 0);
+            byte[] fileBytes = Base64.decode(base64.replaceFirst("data:application/octet-stream;base64,", ""), 0);
             FileOutputStream os = new FileOutputStream(gifFilePath, false);
             os.write(fileBytes);
             os.flush();
             os.close();
-
             Toast.makeText(MainActivity.this, "文件路径：" + gifFilePath, Toast.LENGTH_LONG).show();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    /**
-     * 获取权限
-     *
-     * @param permissions
-     */
     private void initPermission(String[] permissions) {
         if (Build.VERSION.SDK_INT >= 23) {
             ActivityCompat.requestPermissions(this, permissions, REQUEST_PERMISSIONS);
         } else {
-            if (mPermissionType.equals("upload")) {
-                selectFile();
-            } else if (mPermissionType.equals("download")) {
-                downLoadFile();
-            } else if (mPermissionType.equals("downloadBlob")) {
-                convertToGifAndProcess();
-            } else if (mPermissionType.equals("location")) {
-                getLocation();
-            }
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-        //有权限没有通过
-        boolean hasPermissionDismiss = false;
-        if (REQUEST_PERMISSIONS == requestCode) {
-            for (int i = 0; i < grantResults.length; i++) {
-                if (grantResults[i] == -1) {
-                    hasPermissionDismiss = true;
-                    break;
-                }
-            }
-        }
-        //权限已经都通过了，可以将程序继续打开了
-        if (!hasPermissionDismiss) {
-            if (mPermissionType.equals("upload")) {
-                selectFile();
-            } else if (mPermissionType.equals("download")) {
-                downLoadFile();
-            } else if (mPermissionType.equals("downloadBlob")) {
-                convertToGifAndProcess();
-            } else if (mPermissionType.equals("location")) {
-                getLocation();
-            }
-        } else {
-            if (mPermissionType.equals("location")) {
-                mWebView.evaluateJavascript("window.getLocationPermission();", null);
-            }
-            if (mFilePathCallback != null) {
-                mFilePathCallback.onReceiveValue(null);
-            }
-            mFilePathCallback = null;
+            handlePermissionGranted(mPermissionType);
         }
     }
 
     private void getLocation() {
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-
         List<String> providerList = locationManager.getProviders(true);
         if (providerList.contains(LocationManager.GPS_PROVIDER)) {
-            //优先使用gps
             provider = LocationManager.GPS_PROVIDER;
         } else if (providerList.contains(LocationManager.NETWORK_PROVIDER)) {
             provider = LocationManager.NETWORK_PROVIDER;
         } else {
-            // 没有可用的位置提供器
             ToastUtils.showToast(MainActivity.this, "获取定位失败");
             return;
         }
         @SuppressLint("MissingPermission") Location location = locationManager.getLastKnownLocation(provider);
         if (location != null) {
-//            String currentLocation = "当前的经度是：" + location.getLongitude() + ",\n"
-//                    + "当前的纬度是：" + location.getLatitude();
-//            ToastUtils.showToast(MainActivity.this, currentLocation);
-
-            // 显示当前设备的位置信息
-            LocationBean locationBean = new LocationBean(location.getLongitude(),location.getLatitude());
+            LocationBean locationBean = new LocationBean(location.getLongitude(), location.getLatitude());
             Gson gson = new Gson();
             String result = gson.toJson(locationBean);
-
             mWebView.evaluateJavascript("window.getLocationPermission(" + result + ");", null);
         } else {
             ToastUtils.showToast(MainActivity.this, "获取定位失败");
@@ -381,34 +297,18 @@ public class MainActivity extends BaseActivity {
 
     private void downLoadFile() {
         showLoadingDialog();
-
         DownloadUtil.get().download(MainActivity.this, mFilePath, getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath(), mFileName, new DownloadUtil.OnDownloadListener() {
             @Override
             public void onDownloadSuccess(File file) {
                 hideLoadingDialog();
-
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(MainActivity.this, "文件路径：" + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
-                    }
-                });
+                runOnUiThread(() -> Toast.makeText(MainActivity.this, "文件路径：" + file.getAbsolutePath(), Toast.LENGTH_LONG).show());
             }
-
             @Override
-            public void onDownloading(int progress) {
-
-            }
-
+            public void onDownloading(int progress) {}
             @Override
             public void onDownloadFailed(Exception e) {
                 hideLoadingDialog();
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        ToastUtils.showToast(MainActivity.this, "下载异常");
-                    }
-                });
+                runOnUiThread(() -> ToastUtils.showToast(MainActivity.this, "下载异常"));
             }
         });
     }
@@ -422,38 +322,204 @@ public class MainActivity extends BaseActivity {
         return false;
     }
 
+    private void handlePermissionGranted(String type) {
+        if (type == null) return;
+        switch (type) {
+            case "upload":
+                selectFile();
+                break;
+            case "download":
+                downLoadFile();
+                break;
+            case "downloadBlob":
+                convertToGifAndProcess();
+                break;
+            case "location":
+                getLocation();
+                break;
+            case "downloadApp":
+                // 权限获取成功后，如果存在待下载的URL，则立即开始下载
+                if (mPendingDownloadUrl != null && !mPendingDownloadUrl.isEmpty()) {
+                    startDownload(mPendingDownloadUrl);
+                    mPendingDownloadUrl = null; // 清空，防止重复下载
+                }
+                break;
+        }
+    }
+
+    // --- 权限和Activity结果处理 ---
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_PERMISSIONS) {
+            boolean hasPermissionDismiss = false;
+            for (int grantResult : grantResults) {
+                if (grantResult == -1) {
+                    hasPermissionDismiss = true;
+                    break;
+                }
+            }
+            if (!hasPermissionDismiss) {
+                handlePermissionGranted(mPermissionType);
+            } else {
+                if ("location".equals(mPermissionType)) {
+                    mWebView.evaluateJavascript("window.getLocationPermission();", null);
+                } else if ("downloadApp".equals(mPermissionType)) {
+                    Toast.makeText(this, "没有存储权限，无法下载文件", Toast.LENGTH_SHORT).show();
+                }
+                if (mFilePathCallback != null) {
+                    mFilePathCallback.onReceiveValue(null);
+                    mFilePathCallback = null;
+                }
+            }
+        }
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == SELECT_FILE_REQUEST_CODE) {
             if (data != null) {
                 Uri uri = data.getData();
-                Uri[] results = new Uri[]{uri};
+                Uri[] results = {uri};
                 if (mFilePathCallback != null) {
                     mFilePathCallback.onReceiveValue(results);
                 }
-                mFilePathCallback = null;
             } else {
                 if (mFilePathCallback != null) {
                     mFilePathCallback.onReceiveValue(null);
                 }
-                mFilePathCallback = null;
             }
+            mFilePathCallback = null;
+        } else if (requestCode == INSTALL_PERMISSION_REQUEST_CODE) {
+            // 从“安装未知应用”设置页返回后，再次检查权限
+            checkInstallPermission();
         }
     }
+
+    // --- App更新相关的新方法 ---
+
+    /**
+     * 公共方法，供UpdateWebAppInterface调用，处理下载请求
+     * @param url APK下载地址
+     */
+    public void handleDownload(String url) {
+        mPermissionType = "downloadApp";
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                // 【修复点1】在请求权限前，先“记住”要下载的URL
+                mPendingDownloadUrl = url;
+                initPermission(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE});
+            } else {
+                startDownload(url);
+            }
+        } else {
+            startDownload(url);
+        }
+    }
+
+    /**
+     * 开始下载任务
+     * @param url 下载地址
+     */
+    private void startDownload(String url) {
+        // 【修复点2】增加URL有效性检查，防止传入空URL导致闪退
+        if (url == null || !url.toLowerCase().startsWith("http")) {
+            Toast.makeText(this, "下载地址无效", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Toast.makeText(this, "已开始在后台下载，请留意通知栏", Toast.LENGTH_LONG).show();
+        mDownloadManager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+        request.setTitle("新版本下载");
+        request.setDescription("正在下载最新版本的App...");
+        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+        
+        File apkFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "app-release.apk");
+        if (apkFile.exists()) {
+            apkFile.delete();
+        }
+        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "app-release.apk");
+        mDownloadId = mDownloadManager.enqueue(request);
+    }
+
+    /**
+     * 监听下载完成的广播接收器
+     */
+    private final BroadcastReceiver downloadCompleteReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
+            if (id != -1 && id == mDownloadId) {
+                DownloadManager.Query query = new DownloadManager.Query().setFilterById(id);
+                try (Cursor cursor = mDownloadManager.query(query)) {
+                    if (cursor != null && cursor.moveToFirst()) {
+                        int status = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS));
+                        if (status == DownloadManager.STATUS_SUCCESSFUL) {
+                            Toast.makeText(context, "下载完成，即将开始安装", Toast.LENGTH_SHORT).show();
+                            checkInstallPermission();
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    /**
+     * 检查并请求“安装未知应用”的权限 (适配Android 8.0+)
+     */
+    private void checkInstallPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            boolean haveInstallPermission = getPackageManager().canRequestPackageInstalls();
+            if (!haveInstallPermission) {
+                Toast.makeText(this, "请开启“允许安装未知来源应用”的权限", Toast.LENGTH_LONG).show();
+                Uri packageURI = Uri.parse("package:" + getPackageName());
+                Intent intent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, packageURI);
+                startActivityForResult(intent, INSTALL_PERMISSION_REQUEST_CODE);
+                return;
+            }
+        }
+        installApk();
+    }
+
+    /**
+     * 触发系统的安装流程
+     */
+    private void installApk() {
+        File apkFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "app-release.apk");
+        if (!apkFile.exists()) {
+            Toast.makeText(this, "下载失败，无法找到APK文件", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        Uri fileUri;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            fileUri = FileProvider.getUriForFile(this, "com.cars.material.fileprovider", apkFile);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        } else {
+            fileUri = Uri.fromFile(apkFile);
+        }
+        intent.setDataAndType(fileUri, "application/vnd.android.package-archive");
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
+    }
+
+
+    // --- 系统生命周期和返回键处理 ---
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_BACK) {
+            if (mWebView.canGoBack()) { // 优先返回WebView的上一页
+                mWebView.goBack();
+                return true;
+            }
             if (!isExit) {
                 isExit = true;
                 ToastUtils.showToast(MainActivity.this, "再次点击退出程序");
-                new Handler().postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        isExit = false;
-                    }
-                }, 3000);
+                new Handler().postDelayed(() -> isExit = false, 3000);
                 return true;
             } else {
                 AppManager.getAppManager().finishAllActivity();
@@ -467,18 +533,20 @@ public class MainActivity extends BaseActivity {
     protected void onPause() {
         super.onPause();
         mWebView.onPause();
-        // 保存WebView状态到Bundle或SharedPreferences等
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         mWebView.onResume();
-        // 从保存的位置恢复WebView状态
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        if (mWebView != null) {
+            mWebView.destroy();
+        }
+        unregisterReceiver(downloadCompleteReceiver);
     }
 }
