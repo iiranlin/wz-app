@@ -83,6 +83,8 @@ public class MainActivity extends BaseActivity {
     private long mDownloadId; // 下载任务的唯一ID
     private String mPendingDownloadUrl; // 用于保存请求权限前待下载的URL
 
+    private WebAppInterface mWebInterface;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -105,9 +107,7 @@ public class MainActivity extends BaseActivity {
             mRlBack.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if (mWebView.canGoBack()) {
-                        mWebView.goBack();
-                    }
+                    handleBackAction();
                 }
             });
             mRlHome.setOnClickListener(new View.OnClickListener() {
@@ -158,7 +158,8 @@ public class MainActivity extends BaseActivity {
         });
 
         // 你原有的JSBridge
-        mWebView.addJavascriptInterface(new WebAppInterface(this), "Android");
+        mWebInterface = new WebAppInterface(this);
+        mWebView.addJavascriptInterface(mWebInterface, "Android");
         // 用于App更新的新的JSBridge
         mWebView.addJavascriptInterface(new UpdateWebAppInterface(this), "UpdateAndroidBridge");
 
@@ -169,8 +170,19 @@ public class MainActivity extends BaseActivity {
     // 你原有的WebAppInterface，保持不变
     public class WebAppInterface {
         Context mContext;
+        private boolean isBackToHome = false;
+
         WebAppInterface(Context context) {
             mContext = context;
+        }
+
+        @JavascriptInterface
+        public void isBackToHome(boolean isHome) {
+            this.isBackToHome = isHome;
+        }
+
+        public boolean getIsBackToHome() {
+            return isBackToHome;
         }
 
         @JavascriptInterface
@@ -512,21 +524,36 @@ public class MainActivity extends BaseActivity {
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_BACK) {
-            if (mWebView.canGoBack()) { // 优先返回WebView的上一页
-                mWebView.goBack();
-                return true;
-            }
-            if (!isExit) {
-                isExit = true;
-                ToastUtils.showToast(MainActivity.this, "再次点击退出程序");
-                new Handler().postDelayed(() -> isExit = false, 3000);
-                return true;
-            } else {
-                AppManager.getAppManager().finishAllActivity();
-                return false;
-            }
+            handleBackAction();
+            return true;
         }
         return super.onKeyDown(keyCode, event);
+    }
+
+    private void handleBackAction() {
+        if (mWebInterface != null && mWebInterface.getIsBackToHome()) {
+            // 如果 H5 标记当前页面需要“直返首页”
+            // 调用 H5 暴露在 window 上的全局方法
+            mWebView.evaluateJavascript("window.backToHomeClick();", null);
+        } else {
+            // 否则执行常规的 Web 后退逻辑
+            if (mWebView.canGoBack()) {
+                mWebView.goBack();
+            } else {
+                // 如果历史记录到头了，执行退出逻辑
+                performExitLogic();
+            }
+        }
+    }
+
+    private void performExitLogic() {
+        if (!isExit) {
+            isExit = true;
+            ToastUtils.showToast(MainActivity.this, "再次点击退出程序");
+            new Handler().postDelayed(() -> isExit = false, 3000);
+        } else {
+            AppManager.getAppManager().finishAllActivity();
+        }
     }
 
     @Override
@@ -548,5 +575,19 @@ public class MainActivity extends BaseActivity {
             mWebView.destroy();
         }
         unregisterReceiver(downloadCompleteReceiver);
+    }
+
+    // 用于适配 App 更新的 JS Bridge
+    public class UpdateWebAppInterface {
+        Context mContext;
+
+        UpdateWebAppInterface(Context context) {
+            mContext = context;
+        }
+
+        @JavascriptInterface
+        public void downloadApp(String url) {
+            handleDownload(url);
+        }
     }
 }

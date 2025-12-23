@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!--
+        这个文件是告诉FileProvider，哪些路径下的文件是可以被安全分享的。
+        `external-path` 代表外部公共存储区域。
+        `name` 是一个别名，可以随便起。
+        `path` 是相对路径，"." 代表 `Environment.DIRECTORY_DOWNLOADS` 这个目录本身。
+    -->
+    <external-path
+        name="downloads"
+        path="." />
+</paths>
