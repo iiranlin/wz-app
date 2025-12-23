@@ -586,6 +586,11 @@ public class MainActivity extends BaseActivity {
         }
 
         @JavascriptInterface
+        public void startDownload(String url) {
+            handleDownload(url);
+        }
+
+        @JavascriptInterface
         public void downloadApp(String url) {
             handleDownload(url);
         }
