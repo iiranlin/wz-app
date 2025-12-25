@@ -47,7 +47,8 @@
         
                 <!-- 关键：声明FileProvider，用于在Android 7.0+安全地共享文件URI -->
                         <provider
-                            android:name="android.support.v4.content.FileProvider"                    android:authorities="com.cars.material.fileprovider"
+                            android:name="android.support.v4.content.FileProvider"
+                    android:authorities="${applicationId}.fileprovider"
                     android:exported="false"
                     android:grantUriPermissions="true">
                     <meta-data

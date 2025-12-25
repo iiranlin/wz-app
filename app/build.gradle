@@ -8,14 +8,20 @@ android {
             keyAlias 'key'
             keyPassword '123456'
         }
+        release {
+            storeFile file('../debug.keystore')
+            storePassword '123456'
+            keyAlias 'key'
+            keyPassword '123456'
+        }
     }
     compileSdkVersion 28
     defaultConfig {
         applicationId "com.cars.material"
         minSdkVersion 21
         targetSdkVersion 28
-        versionCode 1
-        versionName "1.0"
+        versionCode 2
+        versionName "2.0"
         multiDexEnabled true
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 
@@ -54,13 +60,13 @@ android {
             dimension "environment"
 
             // 测试环境配置
-            buildConfigField "String", "SERVER_URL", "\"http://192.168.110.119:9527/\""
-            buildConfigField "String", "API_URL", "\"http://192.168.110.119:9527/api\""
-            buildConfigField "String", "HOST_NAME", "\"192.168.110.119:9527\""
+            // buildConfigField "String", "SERVER_URL", "\"http://192.168.110.119:9527/\""
+            // buildConfigField "String", "API_URL", "\"http://192.168.110.119:9527/api\""
+            // buildConfigField "String", "HOST_NAME", "\"192.168.110.119:9527\""
 
-            // buildConfigField "String", "SERVER_URL", "\"http://120.46.222.240:18005/\""
-            // buildConfigField "String", "API_URL", "\"http://120.46.222.240:18005/api\""
-            // buildConfigField "String", "HOST_NAME", "\"120.46.222.240\""
+            buildConfigField "String", "SERVER_URL", "\"http://120.46.222.240:18005/\""
+            buildConfigField "String", "API_URL", "\"http://120.46.222.240:18005/api\""
+            buildConfigField "String", "HOST_NAME", "\"120.46.222.240\""
 
             manifestPlaceholders = [
                     appName: "建设物资-测试"
@@ -72,6 +78,7 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
         }
         debug {
             minifyEnabled false

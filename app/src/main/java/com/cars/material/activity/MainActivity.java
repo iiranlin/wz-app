@@ -508,7 +508,7 @@ public class MainActivity extends BaseActivity {
         Intent intent = new Intent(Intent.ACTION_VIEW);
         Uri fileUri;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            fileUri = FileProvider.getUriForFile(this, "com.cars.material.fileprovider", apkFile);
+            fileUri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", apkFile);
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         } else {
             fileUri = Uri.fromFile(apkFile);
