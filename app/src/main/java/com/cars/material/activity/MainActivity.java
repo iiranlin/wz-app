@@ -198,13 +198,19 @@ public class MainActivity extends BaseActivity {
         @JavascriptInterface
         public void sendMenuTitle(final String title) {
             runOnUiThread(() -> {
-                mTvTitle.setText(title);
-                if (checkMenu(title)) {
-                    mRlBack.setVisibility(View.GONE);
-                    mRlHome.setVisibility(View.GONE);
-                } else {
-                    mRlBack.setVisibility(View.VISIBLE);
-                    mRlHome.setVisibility(View.VISIBLE);
+                // 【修复】增加空指针检查，防止全屏模式下控件未初始化导致的闪退
+                if (mTvTitle != null) {
+                    mTvTitle.setText(title);
+                }
+                // 【修复】只在控件存在时才操作可见性
+                if (mRlBack != null && mRlHome != null) {
+                    if (checkMenu(title)) {
+                        mRlBack.setVisibility(View.GONE);
+                        mRlHome.setVisibility(View.GONE);
+                    } else {
+                        mRlBack.setVisibility(View.VISIBLE);
+                        mRlHome.setVisibility(View.VISIBLE);
+                    }
                 }
             });
         }
