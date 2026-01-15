@@ -55,10 +55,13 @@ import java.util.List;
 
 public class MainActivity extends BaseActivity {
 
+    private static final String TAG = "MainActivity";
     private static final int REQUEST_PERMISSIONS = 0;          //获取权限
     private static final int SELECT_FILE_REQUEST_CODE = 1;          //选择文件
     // 跳转到“安装未知应用”设置页面的请求码
     private static final int INSTALL_PERMISSION_REQUEST_CODE = 1002;
+    // Base64 数据前缀
+    private static final String BASE64_DATA_PREFIX = "data:application/octet-stream;base64,";
 
     private ProgressWebView mWebView;
     private RelativeLayout mRlBack;
@@ -258,23 +261,64 @@ public class MainActivity extends BaseActivity {
 
     // --- 以下是你项目中已有的方法，保持不变 ---
 
+    /**
+     * 处理 Base64 数据并保存到系统 Download 目录
+     * 使用 try-with-resources 确保资源正确关闭
+     */
     private void convertToGifAndProcess() {
-        File gifFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + "/" + mFileName);
-        saveFileToPath(mBase64Data, gifFile);
-    }
-
-    private void saveFileToPath(String base64, File gifFilePath) {
         try {
-            byte[] fileBytes = Base64.decode(base64.replaceFirst("data:application/octet-stream;base64,", ""), 0);
-            FileOutputStream os = new FileOutputStream(gifFilePath, false);
-            os.write(fileBytes);
-            os.flush();
-            os.close();
-            Toast.makeText(MainActivity.this, "文件路径：" + gifFilePath, Toast.LENGTH_LONG).show();
+            Toast.makeText(MainActivity.this, "正在保存文件，请稍候...", Toast.LENGTH_SHORT).show();
+            
+            // 验证文件名
+            String sanitizedFileName = sanitizeFileName(mFileName);
+            
+            // 保存文件到系统 Download 目录
+            File downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+            if (downloadDir == null) {
+                Toast.makeText(MainActivity.this, "无法访问下载目录", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            
+            // 处理文件名冲突
+            File savedFile = getUniqueFile(downloadDir, sanitizedFileName);
+            
+            // 解码并写入文件（使用 try-with-resources 自动关闭）
+            byte[] fileBytes = Base64.decode(
+                mBase64Data.replaceFirst(BASE64_DATA_PREFIX, ""), 
+                Base64.DEFAULT
+            );
+            
+            try (FileOutputStream os = new FileOutputStream(savedFile, false)) {
+                os.write(fileBytes);
+                // flush() 和 close() 会自动调用
+            }
+            
+            // 使用 DownloadManager 添加到下载历史，显示通知栏
+            addToDownloadManager(savedFile, fileBytes.length);
+            
+            Toast.makeText(MainActivity.this, 
+                "文件已保存到 Download 文件夹，请查看通知栏", 
+                Toast.LENGTH_LONG).show();
+            
+        } catch (java.io.IOException e) {
+            android.util.Log.e(TAG, "文件写入失败", e);
+            Toast.makeText(MainActivity.this, 
+                "文件保存失败，请检查存储空间", 
+                Toast.LENGTH_SHORT).show();
+        } catch (IllegalArgumentException e) {
+            android.util.Log.e(TAG, "Base64 解码失败", e);
+            Toast.makeText(MainActivity.this, 
+                "文件数据格式错误", 
+                Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
-            e.printStackTrace();
+            android.util.Log.e(TAG, "保存文件时发生未知错误", e);
+            Toast.makeText(MainActivity.this, 
+                "保存失败：" + e.getMessage(), 
+                Toast.LENGTH_SHORT).show();
         }
     }
+
+
 
     private void initPermission(String[] permissions) {
         if (Build.VERSION.SDK_INT >= 23) {
@@ -313,22 +357,199 @@ public class MainActivity extends BaseActivity {
         startActivityForResult(Intent.createChooser(intent, "ChooseFile"), SELECT_FILE_REQUEST_CODE);
     }
 
+    /**
+     * 从 URL 下载文件到系统 Download 目录
+     * 使用 DownloadManager 提供通知栏进度和完成提示
+     */
     private void downLoadFile() {
-        showLoadingDialog();
-        DownloadUtil.get().download(MainActivity.this, mFilePath, getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath(), mFileName, new DownloadUtil.OnDownloadListener() {
-            @Override
-            public void onDownloadSuccess(File file) {
-                hideLoadingDialog();
-                runOnUiThread(() -> Toast.makeText(MainActivity.this, "文件路径：" + file.getAbsolutePath(), Toast.LENGTH_LONG).show());
+        try {
+            // 验证 URL
+            if (mFilePath == null || mFilePath.isEmpty()) {
+                Toast.makeText(MainActivity.this, "下载地址无效", Toast.LENGTH_SHORT).show();
+                return;
             }
-            @Override
-            public void onDownloading(int progress) {}
-            @Override
-            public void onDownloadFailed(Exception e) {
-                hideLoadingDialog();
-                runOnUiThread(() -> ToastUtils.showToast(MainActivity.this, "下载异常"));
+            
+            // 验证并清理文件名
+            String sanitizedFileName = sanitizeFileName(mFileName);
+            
+            Toast.makeText(MainActivity.this, "已开始下载，请留意通知栏", Toast.LENGTH_LONG).show();
+            
+            DownloadManager downloadManager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+            if (downloadManager == null) {
+                Toast.makeText(MainActivity.this, "下载服务不可用", Toast.LENGTH_SHORT).show();
+                return;
             }
-        });
+            
+            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(mFilePath));
+            
+            // 设置通知栏标题和描述
+            request.setTitle(sanitizedFileName);
+            request.setDescription("正在下载文件...");
+            
+            // 设置下载完成后显示通知，并且可以点击通知打开文件
+            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            
+            // 允许系统在下载时使用移动网络和WiFi
+            request.setAllowedNetworkTypes(
+                DownloadManager.Request.NETWORK_MOBILE | DownloadManager.Request.NETWORK_WIFI
+            );
+            
+            // 设置文件保存到系统 Downloads 目录（用户容易找到）
+            request.setDestinationInExternalPublicDir(
+                Environment.DIRECTORY_DOWNLOADS, 
+                sanitizedFileName
+            );
+            
+            // 设置文件可被系统的下载管理器扫描到
+            request.allowScanningByMediaScanner();
+            
+            // 设置下载文件的 MIME 类型（让系统知道用什么应用打开）
+            request.setMimeType(getMimeType(sanitizedFileName));
+            
+            // 开始下载
+            downloadManager.enqueue(request);
+            
+        } catch (IllegalArgumentException e) {
+            android.util.Log.e(TAG, "下载 URL 格式错误", e);
+            Toast.makeText(MainActivity.this, 
+                "下载地址格式错误", 
+                Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            android.util.Log.e(TAG, "下载失败", e);
+            Toast.makeText(MainActivity.this, 
+                "下载失败：" + e.getMessage(), 
+                Toast.LENGTH_SHORT).show();
+        }
+    }
+    
+    /**
+     * 根据文件名获取 MIME 类型
+     * @param fileName 文件名（可能包含扩展名）
+     * @return MIME 类型字符串，如果无法识别则返回 
+     */
+    private String getMimeType(String fileName) {
+        if (fileName == null || fileName.isEmpty()) {
+            return "*/*";
+        }
+        
+        int dotIndex = fileName.lastIndexOf(".");
+        // 没有扩展名或以.结尾
+        if (dotIndex == -1 || dotIndex == fileName.length() - 1) {
+            return "*/*";
+        }
+        
+        String extension = fileName.substring(dotIndex + 1).toLowerCase();
+        switch (extension) {
+            case "pdf":
+                return "application/pdf";
+            case "doc":
+            case "docx":
+                return "application/msword";
+            case "xls":
+            case "xlsx":
+                return "application/vnd.ms-excel";
+            case "ppt":
+            case "pptx":
+                return "application/vnd.ms-powerpoint";
+            case "jpg":
+            case "jpeg":
+                return "image/jpeg";
+            case "png":
+                return "image/png";
+            case "gif":
+                return "image/gif";
+            case "txt":
+                return "text/plain";
+            case "zip":
+                return "application/zip";
+            case "rar":
+                return "application/x-rar-compressed";
+            default:
+                return "*/*";
+        }
+    }
+
+    /**
+     * 清理文件名，移除非法字符
+     * @param fileName 原始文件名
+     * @return 清理后的文件名
+     */
+    private String sanitizeFileName(String fileName) {
+        if (fileName == null || fileName.isEmpty()) {
+            return "unknown_file_" + System.currentTimeMillis();
+        }
+        // 移除 Windows 和 Unix 文件系统的非法字符
+        return fileName.replaceAll("[\\\\/:*?\"<>|]", "_");
+    }
+
+    /**
+     * 获取唯一的文件对象，如果文件已存在则添加序号
+     * @param directory 目标目录
+     * @param fileName 文件名
+     * @return 不冲突的 File 对象
+     */
+    private File getUniqueFile(File directory, String fileName) {
+        File file = new File(directory, fileName);
+        if (!file.exists()) {
+            return file;
+        }
+        
+        // 文件已存在，添加序号
+        String baseName = getBaseName(fileName);
+        String extension = getExtension(fileName);
+        
+        int counter = 1;
+        while (file.exists()) {
+            String newFileName = baseName + "(" + counter + ")" + extension;
+            file = new File(directory, newFileName);
+            counter++;
+        }
+        return file;
+    }
+
+    /**
+     * 获取文件名（不含扩展名）
+     */
+    private String getBaseName(String fileName) {
+        int dotIndex = fileName.lastIndexOf(".");
+        if (dotIndex == -1) {
+            return fileName;
+        }
+        return fileName.substring(0, dotIndex);
+    }
+
+    /**
+     * 获取文件扩展名（包含点号）
+     */
+    private String getExtension(String fileName) {
+        int dotIndex = fileName.lastIndexOf(".");
+        if (dotIndex == -1) {
+            return "";
+        }
+        return fileName.substring(dotIndex);
+    }
+
+    /**
+     * 将文件添加到 DownloadManager 历史，显示通知
+     */
+    private void addToDownloadManager(File savedFile, long fileSize) {
+        DownloadManager downloadManager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+        if (downloadManager != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            try {
+                downloadManager.addCompletedDownload(
+                    savedFile.getName(),              // 标题
+                    "文件已保存",                      // 描述
+                    true,                              // 是否扫描媒体文件
+                    getMimeType(savedFile.getName()), // MIME 类型
+                    savedFile.getAbsolutePath(),      // 文件路径
+                    fileSize,                          // 文件大小
+                    true                               // 显示通知
+                );
+            } catch (Exception e) {
+                android.util.Log.e(TAG, "无法添加到下载历史", e);
+                // 不影响主流程，仅记录日志
+            }
+        }
     }
 
     private boolean checkMenu(String title) {
