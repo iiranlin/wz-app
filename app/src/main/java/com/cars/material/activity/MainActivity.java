@@ -5,6 +5,7 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.DownloadManager;
 import android.content.BroadcastReceiver;
+import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -50,6 +51,7 @@ import com.google.gson.Gson;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -62,6 +64,10 @@ public class MainActivity extends BaseActivity {
     private static final int INSTALL_PERMISSION_REQUEST_CODE = 1002;
     // Base64 数据前缀
     private static final String BASE64_DATA_PREFIX = "data:application/octet-stream;base64,";
+    // 多文件上传最大文件数量限制
+    private static final int MAX_FILE_COUNT = 20;
+    // 文件选择器标题
+    private static final String FILE_CHOOSER_TITLE = "选择文件";
 
     private ProgressWebView mWebView;
     private RelativeLayout mRlBack;
@@ -153,6 +159,8 @@ public class MainActivity extends BaseActivity {
             @Override
             public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
                 mFilePathCallback = filePathCallback;
+                
+                // 弹出文件选择器，支持多选
                 String[] permissions = {Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE};
                 mPermissionType = "upload";
                 initPermission(permissions);
@@ -354,7 +362,8 @@ public class MainActivity extends BaseActivity {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("*/*");
-        startActivityForResult(Intent.createChooser(intent, "ChooseFile"), SELECT_FILE_REQUEST_CODE);
+        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);  // 允许多选文件
+        startActivityForResult(Intent.createChooser(intent, FILE_CHOOSER_TITLE), SELECT_FILE_REQUEST_CODE);
     }
 
     /**
@@ -620,20 +629,76 @@ public class MainActivity extends BaseActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == SELECT_FILE_REQUEST_CODE) {
             if (data != null) {
-                Uri uri = data.getData();
-                Uri[] results = {uri};
-                if (mFilePathCallback != null) {
-                    mFilePathCallback.onReceiveValue(results);
-                }
+                handleFileSelection(data);
             } else {
-                if (mFilePathCallback != null) {
-                    mFilePathCallback.onReceiveValue(null);
-                }
+                // 用户取消选择
+                handleFileSelectionCancelled();
             }
             mFilePathCallback = null;
         } else if (requestCode == INSTALL_PERMISSION_REQUEST_CODE) {
-            // 从“安装未知应用”设置页返回后，再次检查权限
+            // 从"安装未知应用"设置页返回后，再次检查权限
             checkInstallPermission();
+        }
+    }
+
+    /**
+     * 处理文件选择结果
+     * @param data Intent 数据，包含用户选择的文件
+     */
+    private void handleFileSelection(Intent data) {
+        List<Uri> selectedUris = new ArrayList<>();
+        
+        // 处理多文件选择
+        if (data.getClipData() != null) {
+            int count = data.getClipData().getItemCount();
+            
+            // 限制文件数量
+            if (count > MAX_FILE_COUNT) {
+                Toast.makeText(this, 
+                    "最多只能选择 " + MAX_FILE_COUNT + " 个文件，已自动取前 " + MAX_FILE_COUNT + " 个", 
+                    Toast.LENGTH_LONG).show();
+                count = MAX_FILE_COUNT;
+            }
+            
+            android.util.Log.i(TAG, "用户选择了 " + count + " 个文件");
+            
+            for (int i = 0; i < count; i++) {
+                Uri uri = data.getClipData().getItemAt(i).getUri();
+                if (uri != null) {
+                    selectedUris.add(uri);
+                } else {
+                    android.util.Log.w(TAG, "第 " + (i + 1) + " 个文件的 Uri 为空，已跳过");
+                }
+            }
+        } else if (data.getData() != null) {
+            // 用户只选择了一个文件
+            android.util.Log.i(TAG, "用户选择了 1 个文件");
+            selectedUris.add(data.getData());
+        }
+        
+        // 一次性返回所有文件给 H5
+        if (!selectedUris.isEmpty()) {
+            Uri[] uriArray = selectedUris.toArray(new Uri[0]);
+            if (mFilePathCallback != null) {
+                mFilePathCallback.onReceiveValue(uriArray);
+                mFilePathCallback = null;
+            }
+            android.util.Log.i(TAG, "已返回 " + selectedUris.size() + " 个文件给 H5");
+        } else {
+            if (mFilePathCallback != null) {
+                mFilePathCallback.onReceiveValue(null);
+                mFilePathCallback = null;
+            }
+        }
+    }
+
+    /**
+     * 处理用户取消文件选择
+     */
+    private void handleFileSelectionCancelled() {
+        if (mFilePathCallback != null) {
+            mFilePathCallback.onReceiveValue(null);
+            mFilePathCallback = null;
         }
     }
 
@@ -746,6 +811,7 @@ public class MainActivity extends BaseActivity {
     }
 
 
+
     // --- 系统生命周期和返回键处理 ---
 
     @Override
@@ -798,10 +864,23 @@ public class MainActivity extends BaseActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        
+        // 清理回调引用
+        mFilePathCallback = null;
+        
+        // 清理 WebView
         if (mWebView != null) {
             mWebView.destroy();
+            mWebView = null;
         }
-        unregisterReceiver(downloadCompleteReceiver);
+        
+        // 取消注册广播接收器
+        try {
+            unregisterReceiver(downloadCompleteReceiver);
+        } catch (IllegalArgumentException e) {
+            // 广播接收器可能未注册，忽略异常
+            android.util.Log.d(TAG, "广播接收器未注册或已取消注册");
+        }
     }
 
     // 用于适配 App 更新的 JS Bridge
