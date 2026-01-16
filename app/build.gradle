@@ -60,9 +60,6 @@ android {
             dimension "environment"
 
             // 测试环境配置
-            // buildConfigField "String", "SERVER_URL", "\"http://192.168.110.119:9527/\""
-            // buildConfigField "String", "API_URL", "\"http://192.168.110.119:9527/api\""
-            // buildConfigField "String", "HOST_NAME", "\"192.168.110.119:9527\""
 
             buildConfigField "String", "SERVER_URL", "\"http://120.46.222.240:18005/\""
             buildConfigField "String", "API_URL", "\"http://120.46.222.240:18005/api\""
@@ -70,6 +67,21 @@ android {
 
             manifestPlaceholders = [
                     appName: "建设物资-测试"
+            ]
+        }
+
+        // 本地版 - 建设物资-本地
+        local {
+            applicationId "com.cars.material.local"
+            dimension "environment"
+
+            // 本地环境配置
+            buildConfigField "String", "SERVER_URL", "\"http://192.168.110.119:9527/\""
+            buildConfigField "String", "API_URL", "\"http://192.168.110.119:9527/api\""
+            buildConfigField "String", "HOST_NAME", "\"192.168.110.119:9527\""
+
+            manifestPlaceholders = [
+                    appName: "建设物资-本地"
             ]
         }
     }
