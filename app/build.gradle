@@ -20,8 +20,8 @@ android {
         applicationId "com.cars.material"
         minSdkVersion 21
         targetSdkVersion 28
-        versionCode 202
-        versionName "2.2"
+        versionCode 203
+        versionName "2.3"
         multiDexEnabled true
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 
