@@ -100,6 +100,7 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener,
     private AuthorizationInfo mAuthorizationInfo;
     private boolean mShowPassWord = false;
     private boolean mSavePassWord = false;
+    private boolean mIsSmsLogin = false;
     private String mAndroidId;
 
     private Handler mHandler = new Handler(new Handler.Callback() {
@@ -439,12 +440,14 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener,
                 getSmsVerificationCode();
                 break;
             case R.id.tv_change:
+                mIsSmsLogin = true;
                 mLlUserLogin.setVisibility(View.GONE);
                 mLlSmsLogin.setVisibility(View.VISIBLE);
                 mRlUserBottom.setVisibility(View.GONE);
                 mRlSmsBottom.setVisibility(View.VISIBLE);
                 break;
             case R.id.tv_sms_change:
+                mIsSmsLogin = false;
                 mLlUserLogin.setVisibility(View.VISIBLE);
                 mLlSmsLogin.setVisibility(View.GONE);
                 mRlUserBottom.setVisibility(View.VISIBLE);
@@ -495,7 +498,7 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener,
     }
 
     private void startToMain() {
-        if (mTvChange.getText().toString().trim().equals("使用短信登录 >")) {
+        if (!mIsSmsLogin) {
             if (TextUtils.isEmpty(mEtUser.getText().toString().trim())) {
                 ToastUtils.showToast(this, "请输入用户名");
                 return;
