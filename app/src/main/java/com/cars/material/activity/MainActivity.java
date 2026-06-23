@@ -19,6 +19,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.PersistableBundle;
+import android.provider.MediaStore;
 import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
 import android.support.annotation.NonNull;
@@ -50,16 +51,19 @@ import com.google.gson.Gson;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class MainActivity extends BaseActivity {
 
     private static final String TAG = "MainActivity";
     private static final int REQUEST_PERMISSIONS = 0;          //获取权限
     private static final int SELECT_FILE_REQUEST_CODE = 1;          //选择文件
+    private static final int TAKE_PHOTO_REQUEST_CODE = 2;          //拍照上传
     // 跳转到“安装未知应用”设置页面的请求码
     private static final int INSTALL_PERMISSION_REQUEST_CODE = 1002;
     // Base64 数据前缀
@@ -82,6 +86,8 @@ public class MainActivity extends BaseActivity {
     private String mPermissionType;
 
     private ValueCallback<Uri[]> mFilePathCallback;
+    private Uri mCameraPhotoUri;
+    private boolean mIsCaptureUpload;
     private String mBase64Data;
 
     private LocationManager locationManager;// 位置管理类
@@ -158,9 +164,13 @@ public class MainActivity extends BaseActivity {
 
             @Override
             public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
+                if (mFilePathCallback != null) {
+                    mFilePathCallback.onReceiveValue(null);
+                }
                 mFilePathCallback = filePathCallback;
+                mCameraPhotoUri = null;
+                mIsCaptureUpload = fileChooserParams != null && fileChooserParams.isCaptureEnabled();
                 
-                // 弹出文件选择器，支持多选
                 String[] permissions = {Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE};
                 mPermissionType = "upload";
                 initPermission(permissions);
@@ -364,6 +374,49 @@ public class MainActivity extends BaseActivity {
         intent.setType("*/*");
         intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);  // 允许多选文件
         startActivityForResult(Intent.createChooser(intent, FILE_CHOOSER_TITLE), SELECT_FILE_REQUEST_CODE);
+    }
+
+    private void takePhoto() {
+        Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if (cameraIntent.resolveActivity(getPackageManager()) == null) {
+            Toast.makeText(this, "未找到可用相机", Toast.LENGTH_SHORT).show();
+            handleFileSelectionCancelled();
+            return;
+        }
+
+        File photoFile = createImageFile();
+        if (photoFile == null) {
+            Toast.makeText(this, "创建照片文件失败", Toast.LENGTH_SHORT).show();
+            handleFileSelectionCancelled();
+            return;
+        }
+
+        mCameraPhotoUri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", photoFile);
+        cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, mCameraPhotoUri);
+        cameraIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        cameraIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+        startActivityForResult(cameraIntent, TAKE_PHOTO_REQUEST_CODE);
+    }
+
+    private File createImageFile() {
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        if (storageDir == null) {
+            storageDir = getExternalCacheDir();
+        }
+        if (storageDir == null) {
+            storageDir = getCacheDir();
+        }
+        if (!storageDir.exists() && !storageDir.mkdirs()) {
+            android.util.Log.e(TAG, "无法创建拍照缓存目录：" + storageDir.getAbsolutePath());
+            return null;
+        }
+        try {
+            return File.createTempFile("IMG_" + timeStamp + "_", ".jpg", storageDir);
+        } catch (IOException e) {
+            android.util.Log.e(TAG, "创建拍照文件失败", e);
+            return null;
+        }
     }
 
     /**
@@ -574,7 +627,11 @@ public class MainActivity extends BaseActivity {
         if (type == null) return;
         switch (type) {
             case "upload":
-                selectFile();
+                if (mIsCaptureUpload) {
+                    takePhoto();
+                } else {
+                    selectFile();
+                }
                 break;
             case "download":
                 downLoadFile();
@@ -620,6 +677,8 @@ public class MainActivity extends BaseActivity {
                     mFilePathCallback.onReceiveValue(null);
                     mFilePathCallback = null;
                 }
+                mCameraPhotoUri = null;
+                mIsCaptureUpload = false;
             }
         }
     }
@@ -635,6 +694,15 @@ public class MainActivity extends BaseActivity {
                 handleFileSelectionCancelled();
             }
             mFilePathCallback = null;
+            mIsCaptureUpload = false;
+        } else if (requestCode == TAKE_PHOTO_REQUEST_CODE) {
+            if (resultCode == RESULT_OK && mCameraPhotoUri != null) {
+                handlePhotoSelection();
+            } else {
+                handleFileSelectionCancelled();
+            }
+            mCameraPhotoUri = null;
+            mIsCaptureUpload = false;
         } else if (requestCode == INSTALL_PERMISSION_REQUEST_CODE) {
             // 从"安装未知应用"设置页返回后，再次检查权限
             checkInstallPermission();
@@ -699,6 +767,19 @@ public class MainActivity extends BaseActivity {
         if (mFilePathCallback != null) {
             mFilePathCallback.onReceiveValue(null);
             mFilePathCallback = null;
+        }
+        mCameraPhotoUri = null;
+        mIsCaptureUpload = false;
+    }
+
+    /**
+     * 处理拍照结果
+     */
+    private void handlePhotoSelection() {
+        if (mFilePathCallback != null) {
+            mFilePathCallback.onReceiveValue(new Uri[]{mCameraPhotoUri});
+            mFilePathCallback = null;
+            android.util.Log.i(TAG, "已返回拍照文件给 H5");
         }
     }
 
@@ -867,6 +948,8 @@ public class MainActivity extends BaseActivity {
         
         // 清理回调引用
         mFilePathCallback = null;
+        mCameraPhotoUri = null;
+        mIsCaptureUpload = false;
         
         // 清理 WebView
         if (mWebView != null) {
